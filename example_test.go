@@ -2,8 +2,8 @@ package allow
 
 import "net/http"
 
-// This example shows use of Allow using a Map literal.
-func ExampleAllow_literal() {
+// This example shows use of map literal method routing.
+func ExampleMapFunc_literal() {
 	mux := http.NewServeMux()
 	mux.Handle("/puppies/", MapFunc(map[string]http.HandlerFunc{
 		"POST": http.NotFound,
@@ -11,7 +11,7 @@ func ExampleAllow_literal() {
 	}))
 }
 
-// This example shows use of Allow using the fluent/chaining Map API.
+// This example shows use of fluent method routing.
 func ExampleAllow_fluent() {
 	mux := http.NewServeMux()
 	mux.Handle("/puppies/", New().
