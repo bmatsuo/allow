@@ -11,21 +11,46 @@ Functions in the allow package issue runtime panics.
 */
 package allow
 
-import "net/http"
+import (
+	"fmt"
+	"net/http"
+	"sort"
+	"strings"
+)
 
 type mhandler struct {
 	m string
 	h http.Handler
 }
 
-// Allow is a type that maps HTTP request methods to handlers.  Allow is not
-// read-write threadsafe. Do not call it's Allow* methods concurrently or after
-// it has started serving HTTP requests.
+func NotAllowed(allowed ...string) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Allow", strings.Join(allowed, " "))
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		switch n := len(allowed); n {
+		case 0:
+			fmt.Fprintln(w, "no methods allowed")
+		case 1:
+			fmt.Fprintln(w, "request method must be", allowed[0])
+		case 2:
+			fmt.Fprintf(w, "request method must be %s or %s\n", allowed[0], allowed[1])
+		default:
+			fmt.Fprintln(w, "request method must be one of", allowed)
+		}
+	})
+}
+
+// Allow is a type that maps HTTP request methods to handlers.
 type Allow struct {
-	n    int
-	mhs  []mhandler
-	mset map[string]bool
-	ms   string
+	// NotAllowed serves requests for which there is no method handler.  It is
+	// the function's responsibility to set the Allow header and respond 405
+	// (method not allowed).  If the function is nil a default implementation
+	// is provided.
+	NotAllowed http.HandlerFunc
+	n          int
+	mhs        []mhandler
+	mset       map[string]bool
+	ms         []string
 }
 
 // New allocates and returns an Allow.
@@ -35,40 +60,49 @@ func New() *Allow {
 	return a
 }
 
-func (a *Allow) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if a.n == 0 {
-		w.Header().Set("Allow", "")
-		http.Error(w, "no methods allowed", http.StatusMethodNotAllowed)
+func (a *Allow) notAllowed(w http.ResponseWriter, r *http.Request) {
+	var h http.Handler = a.NotAllowed
+	if h == nil {
+		h = NotAllowed(a.ms...)
 	}
-	m := r.Method
+	h.ServeHTTP(w, r)
+}
+
+// ServeHTTP serves the request using the handler associated with r.Method.
+func (a *Allow) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	for _, mh := range a.mhs {
-		if m == mh.m {
+		if r.Method == mh.m {
 			mh.h.ServeHTTP(w, r)
 			return
 		}
 	}
-	w.Header().Set("Allow", a.ms)
-	http.Error(w, "no methods allowed", http.StatusMethodNotAllowed)
+	a.notAllowed(w, r)
 }
 
 // Allow makes a serve method requests using h.  Allow will panic if called
-// with the same method more than once or if h is nil.
+// with the same method more than once or if h is nil.  This method is not
+// threadsafe.
 func (a *Allow) Allow(method string, h http.Handler) *Allow {
 	if a.mset[method] {
 		panic("handler already defined")
 	}
 	a.mset[method] = true
 	a.mhs = append(a.mhs, mhandler{method, h})
-	if a.ms != "" {
-		a.ms += " "
-	}
-	a.ms += method
+	a.ms = append(a.ms, method)
+	sort.Strings(a.ms) // this is probably pretty inefficient
 	return a
 }
 
 // See Allow.
 func (a *Allow) AllowFunc(method string, h http.HandlerFunc) *Allow {
 	return a.Allow(method, h)
+}
+
+// Set a.NowAllowed in a fluent style.
+func (a *Allow) SetNotAllowed(fn http.HandlerFunc) *Allow {
+	a.NotAllowed = fn
+	return a
+
 }
 
 // Allow returns an http.Handler that serves requests using the handler from m
