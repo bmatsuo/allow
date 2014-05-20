@@ -98,13 +98,6 @@ func (a *Allow) AllowFunc(method string, h http.HandlerFunc) *Allow {
 	return a.Allow(method, h)
 }
 
-// Set a.NowAllowed in a fluent style.
-func (a *Allow) SetNotAllowed(fn http.HandlerFunc) *Allow {
-	a.NotAllowed = fn
-	return a
-
-}
-
 // Allow returns an http.Handler that serves requests using the handler from m
 // corresponding to the request's method.  If methods contains a nil value
 // Allow will panic.  If methods is nil the returned handler allows no HTTP
