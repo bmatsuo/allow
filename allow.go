@@ -2,6 +2,14 @@
 Package allow provides HTTP method routing.
 
 This API is experimental.
+
+There are really two distinct APIs here. The Map* functions use map literal
+syntax for clean, structured routes.  The Allow type has a fluent interface and
+allows for http.Handler and http.HandlerFunc types to be used more freely.
+
+Functions in the package issue runtime panics.  It is not planned for this API
+to support runtime modification of top-level routing logic.  An early runtime
+panic is the best action to take if routes are static and built on startup.
 */
 package allow
 
