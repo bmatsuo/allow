@@ -1,13 +1,10 @@
 /*
-Package allow provides HTTP method routing.
-
-This API is experimental.
-
-There are two APIs in the allow package. The Map* functions use map literal
-syntax for clean, structured routes.  The Allow type has a fluent interface and
-allows for http.Handler and http.HandlerFunc types to be used more freely.
+Package allow provides HTTP method routing.  The Map* functions use map literal
+syntax for clean, structured routes.
 
 Functions in the allow package issue runtime panics.
+
+This API is experimental.
 */
 package allow
 
@@ -89,7 +86,7 @@ func (a *Allow) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 // Allow makes a serve method requests using h.  Allow will panic if called
 // with the same method more than once or if h is nil.  This method is not
 // threadsafe.
-func (a *Allow) Allow(method string, h http.Handler) *Allow {
+func (a *Allow) Allow(method string, h http.Handler) {
 	if a.mset[method] {
 		panic("handler already defined")
 	}
@@ -97,13 +94,12 @@ func (a *Allow) Allow(method string, h http.Handler) *Allow {
 	a.mhs = append(a.mhs, mhandler{method, h})
 	a.ms = append(a.ms, method)
 	sort.Strings(a.ms) // this is probably pretty inefficient
-	return a
 }
 
 // AllowFunc behaves like Allow, but function literals can be passed without
 // explicit conversion to http.HandlerFunc.
-func (a *Allow) AllowFunc(method string, h http.HandlerFunc) *Allow {
-	return a.Allow(method, h)
+func (a *Allow) AllowFunc(method string, h http.HandlerFunc) {
+	a.Allow(method, h)
 }
 
 // Map allocates and returns an Allow that serves responses using the handler

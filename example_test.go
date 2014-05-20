@@ -48,11 +48,3 @@ func ExampleMapFunc_literal() {
 		"GET":  http.NotFound,
 	}))
 }
-
-// This example shows use of fluent method routing.
-func ExampleAllow_fluent() {
-	mux := http.NewServeMux()
-	mux.Handle("/puppies/", New().
-		Allow("POST", http.NotFoundHandler()).
-		AllowFunc("GET", http.NotFound))
-}
