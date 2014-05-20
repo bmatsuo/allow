@@ -23,6 +23,8 @@ type mhandler struct {
 	h http.Handler
 }
 
+// NotAllowed returns a basic, plaintext handler for responding to request
+// methods not supported by a resource.
 func NotAllowed(allowed ...string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Allow", strings.Join(allowed, " "))
@@ -61,15 +63,16 @@ func New() *Allow {
 }
 
 func (a *Allow) notAllowed(w http.ResponseWriter, r *http.Request) {
-	var h http.Handler = a.NotAllowed
+	h := http.Handler(a.NotAllowed)
 	if h == nil {
 		h = NotAllowed(a.ms...)
 	}
 	h.ServeHTTP(w, r)
 }
 
+// Methods returns the methods supported by a.
 func (a *Allow) Methods() []string {
-	return a.ms
+	return append([]string(nil), a.ms...)
 }
 
 // ServeHTTP serves the request using the handler associated with r.Method.
@@ -97,15 +100,14 @@ func (a *Allow) Allow(method string, h http.Handler) *Allow {
 	return a
 }
 
-// See Allow.
+// AllowFunc behaves like Allow, but function literals can be passed without
+// explicit conversion to http.HandlerFunc.
 func (a *Allow) AllowFunc(method string, h http.HandlerFunc) *Allow {
 	return a.Allow(method, h)
 }
 
-// Allow returns an http.Handler that serves requests using the handler from m
-// corresponding to the request's method.  If methods contains a nil value
-// Allow will panic.  If methods is nil the returned handler allows no HTTP
-// methods.
+// Map allocates and returns an Allow that serves responses using the handler
+// from m corresponding to the request's method.
 func Map(m map[string]http.Handler) *Allow {
 	a := New()
 	for m, h := range m {
@@ -114,6 +116,8 @@ func Map(m map[string]http.Handler) *Allow {
 	return a
 }
 
+// MapFunc is similar to Map but is easier to work with if dealing primarily
+// with http.HandlerFunc types.
 func MapFunc(m map[string]http.HandlerFunc) *Allow {
 	a := New()
 	for m, h := range m {
