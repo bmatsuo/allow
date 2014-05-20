@@ -15,6 +15,6 @@ func ExampleMapFunc_literal() {
 func ExampleAllow_fluent() {
 	mux := http.NewServeMux()
 	mux.Handle("/puppies/", New().
-		AllowFunc("POST", http.NotFound).
+		Allow("POST", http.NotFoundHandler()).
 		AllowFunc("GET", http.NotFound))
 }
