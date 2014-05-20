@@ -68,6 +68,10 @@ func (a *Allow) notAllowed(w http.ResponseWriter, r *http.Request) {
 	h.ServeHTTP(w, r)
 }
 
+func (a *Allow) Methods() []string {
+	return a.ms
+}
+
 // ServeHTTP serves the request using the handler associated with r.Method.
 func (a *Allow) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	for _, mh := range a.mhs {
@@ -102,7 +106,7 @@ func (a *Allow) AllowFunc(method string, h http.HandlerFunc) *Allow {
 // corresponding to the request's method.  If methods contains a nil value
 // Allow will panic.  If methods is nil the returned handler allows no HTTP
 // methods.
-func Map(m map[string]http.Handler) http.Handler {
+func Map(m map[string]http.Handler) *Allow {
 	a := New()
 	for m, h := range m {
 		a.Allow(m, h)
@@ -110,7 +114,7 @@ func Map(m map[string]http.Handler) http.Handler {
 	return a
 }
 
-func MapFunc(m map[string]http.HandlerFunc) http.Handler {
+func MapFunc(m map[string]http.HandlerFunc) *Allow {
 	a := New()
 	for m, h := range m {
 		a.Allow(m, h)
