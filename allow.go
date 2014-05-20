@@ -70,7 +70,7 @@ func (a *Allow) notAllowed(w http.ResponseWriter, r *http.Request) {
 	h.ServeHTTP(w, r)
 }
 
-// Methods returns the methods supported by a.
+// Methods returns the HTTP methods supported by a.
 func (a *Allow) Methods() []string {
 	return append([]string(nil), a.ms...)
 }
